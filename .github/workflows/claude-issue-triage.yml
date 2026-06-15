@@ -1,0 +1,72 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Ensure triage labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "bug"           --color "d73a4a" --description "Something isn't working"                             --repo ${{ github.repository }} --force
+          gh label create "enhancement"   --color "a2eeef" --description "New feature or request"                              --repo ${{ github.repository }} --force
+          gh label create "question"      --color "d876e3" --description "Further information is requested"                    --repo ${{ github.repository }} --force
+          gh label create "documentation" --color "0075ca" --description "Improvements or additions to documentation"          --repo ${{ github.repository }} --force
+          gh label create "ui/ux"         --color "e4e669" --description "Visual design or canvas rendering issues"            --repo ${{ github.repository }} --force
+          gh label create "gameplay"      --color "0e8a16" --description "Game mechanics: scoring, pieces, rotation"           --repo ${{ github.repository }} --force
+          gh label create "performance"   --color "f9d0c4" --description "Frame rate, animation loop, or rendering efficiency" --repo ${{ github.repository }} --force
+
+      - name: Run Claude Issue Triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools Bash(gh issue *),Bash(gh label *)'
+          prompt: |
+            You are a helpful triage assistant for a Tetris game project written in vanilla JavaScript (index.html, style.css, game.js).
+
+            Analyze the following GitHub issue and perform two actions:
+
+            ISSUE TITLE: ${{ github.event.issue.title }}
+            ISSUE BODY: ${{ github.event.issue.body }}
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+            REPO: ${{ github.repository }}
+
+            ## Step 1 — Apply labels
+            Choose ONE OR MORE labels that best fit and apply them with:
+              gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-label "<label>"
+
+            Available labels:
+            - bug              → something is broken or behaving incorrectly
+            - enhancement      → new feature or improvement request
+            - question         → needs clarification or is a general question
+            - documentation    → relates to README, CLAUDE.md, or comments
+            - ui/ux            → visual design, layout, canvas rendering, or overlay issues
+            - gameplay         → game mechanics: scoring, speed, rotation, line clears, piece spawning
+            - performance      → frame rate, animation loop, rendering efficiency
+
+            ## Step 2 — Post a diagnostic comment
+            Post a comment using:
+              gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "<markdown>"
+
+            The comment must include:
+            1. **Problem summary** — restate the issue in technical terms
+            2. **Likely root cause** — which function(s) in game.js are most likely involved (init, loop, draw, lockPiece, tryRotate, hardDrop, clearLines, spawn)
+            3. **Suggested approach** — high-level implementation direction (no full code, just a clear path forward)
+            4. **Files to modify** — which of index.html, style.css, game.js are likely affected
+
+            Keep the comment under 250 words and developer-focused.
