@@ -4,15 +4,48 @@
   padding: 0;
 }
 
+:root {
+  --color-bg: #0f0f17;
+  --color-text: #e0e0e0;
+  --color-accent: #7aa2f7;
+  --color-canvas-bg: #1a1a25;
+  --color-canvas-border: #2a2a3a;
+  --color-label: #555570;
+  --color-controls: #888;
+  --color-kbd-bg: #22223a;
+  --color-kbd-border: #3a3a5a;
+  --color-kbd-text: #aaa;
+  --color-overlay: rgba(10, 10, 20, 0.75);
+  --color-toggle-track: #3a3a5a;
+  --color-toggle-thumb: #7aa2f7;
+}
+
+body.light-mode {
+  --color-bg: #f0f2f8;
+  --color-text: #1a1a2e;
+  --color-accent: #4a72c7;
+  --color-canvas-bg: #f8f8ff;
+  --color-canvas-border: #c0c0d0;
+  --color-label: #8888a0;
+  --color-controls: #666678;
+  --color-kbd-bg: #e4e4f0;
+  --color-kbd-border: #b0b0c8;
+  --color-kbd-text: #555568;
+  --color-overlay: rgba(240, 240, 248, 0.85);
+  --color-toggle-track: #b0b0c8;
+  --color-toggle-thumb: #4a72c7;
+}
+
 body {
-  background: #0f0f17;
-  color: #e0e0e0;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: system-ui, -apple-system, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   user-select: none;
+  transition: background 0.25s, color 0.25s;
 }
 
 .wrapper {
@@ -28,8 +61,9 @@ body {
   font-size: 36px;
   font-weight: 900;
   letter-spacing: 10px;
-  color: #7aa2f7;
+  color: var(--color-accent);
   text-shadow: 0 0 20px rgba(122, 162, 247, 0.4);
+  transition: color 0.25s;
 }
 
 .game-container {
@@ -40,10 +74,11 @@ body {
 
 #board {
   display: block;
-  border: 1px solid #2a2a3a;
-  background: #1a1a25;
+  border: 1px solid var(--color-canvas-border);
+  background: var(--color-canvas-bg);
   border-radius: 4px;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+  transition: background 0.25s, border-color 0.25s;
 }
 
 /* ---- Panel lateral ---- */
@@ -64,23 +99,26 @@ body {
 .label {
   font-size: 10px;
   letter-spacing: 2px;
-  color: #555570;
+  color: var(--color-label);
   font-weight: 600;
+  transition: color 0.25s;
 }
 
 .value {
   font-family: 'Courier New', Courier, monospace;
   font-size: 26px;
   font-weight: 700;
-  color: #7aa2f7;
+  color: var(--color-accent);
   letter-spacing: 1px;
+  transition: color 0.25s;
 }
 
 #next-canvas {
   display: block;
-  border: 1px solid #2a2a3a;
-  background: #1a1a25;
+  border: 1px solid var(--color-canvas-border);
+  background: var(--color-canvas-bg);
   border-radius: 4px;
+  transition: background 0.25s, border-color 0.25s;
 }
 
 /* ---- Controles ---- */
@@ -93,20 +131,65 @@ body {
 
 .controls li {
   font-size: 12px;
-  color: #888;
+  color: var(--color-controls);
   display: flex;
   align-items: center;
   gap: 4px;
+  transition: color 0.25s;
 }
 
 kbd {
-  background: #22223a;
-  border: 1px solid #3a3a5a;
+  background: var(--color-kbd-bg);
+  border: 1px solid var(--color-kbd-border);
   border-radius: 3px;
   padding: 1px 6px;
   font-size: 11px;
   font-family: inherit;
-  color: #aaa;
+  color: var(--color-kbd-text);
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+
+/* ---- Theme Toggle ---- */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.theme-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.theme-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.slider {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: var(--color-toggle-track);
+  border-radius: 11px;
+  flex-shrink: 0;
+  transition: background 0.25s;
+}
+
+.slider::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--color-toggle-thumb);
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.25s, background 0.25s;
+}
+
+.theme-toggle input:checked + .slider::after {
+  transform: translateX(18px);
 }
 
 /* ---- Overlay ---- */
@@ -116,9 +199,10 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 20, 0.75);
+  background: var(--color-overlay);
   backdrop-filter: blur(4px);
   border-radius: 4px;
+  transition: background 0.25s;
 }
 
 .overlay.hidden {
@@ -143,13 +227,14 @@ kbd {
 #overlay-score {
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
-  color: #7aa2f7;
+  color: var(--color-accent);
+  transition: color 0.25s;
 }
 
 #restart-btn {
   margin-top: 8px;
-  background: #7aa2f7;
-  color: #0f0f17;
+  background: var(--color-accent);
+  color: var(--color-bg);
   border: none;
   border-radius: 6px;
   padding: 10px 28px;
@@ -157,7 +242,7 @@ kbd {
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 1px;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.25s;
 }
 
 #restart-btn:hover {
