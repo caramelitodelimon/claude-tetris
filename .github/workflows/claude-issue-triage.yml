@@ -63,7 +63,9 @@ jobs:
             Post a comment using:
               gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "<markdown>"
 
-            The comment must include:
+            The comment must be written in valid GitHub Flavored Markdown (GFM) so it renders correctly on GitHub. Use headers (##), bold (**text**), bullet lists (- item), and inline code (`function()`) where appropriate.
+
+            Structure the comment with these four sections:
             1. **Problem summary** — restate the issue in technical terms
             2. **Likely root cause** — which function(s) in game.js are most likely involved (init, loop, draw, lockPiece, tryRotate, hardDrop, clearLines, spawn)
             3. **Suggested approach** — high-level implementation direction (no full code, just a clear path forward)
