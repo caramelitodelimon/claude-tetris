@@ -43,6 +43,16 @@
         </div>
 
         <div class="panel-section">
+          <span class="label">SKIN</span>
+          <select id="skin-select" class="skin-select">
+            <option value="retro">Retro</option>
+            <option value="neon">Neon</option>
+            <option value="pastel">Pastel</option>
+            <option value="pixel">Pixel Art</option>
+          </select>
+        </div>
+
+        <div class="panel-section">
           <span class="label">TEMA</span>
           <label class="theme-toggle" title="Cambiar modo claro/oscuro">
             <span class="theme-icon">🌙</span>
@@ -51,14 +61,94 @@
             <span class="theme-icon">☀️</span>
           </label>
         </div>
+
+        <div class="panel-section leaderboard-section">
+          <span class="label">RECORDS</span>
+          <table id="leaderboard-table" class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Pts</th>
+                <th>Combo</th>
+                <th>Lines</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+            </tbody>
+          </table>
+          <button id="clear-records-btn" class="clear-btn">Borrar records</button>
+        </div>
       </aside>
     </div>
 
+    <!-- Game Over overlay -->
     <div id="overlay" class="overlay hidden">
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+
+        <!-- Name input shown when score qualifies for top 5 -->
+        <div id="name-entry" class="name-entry hidden">
+          <p class="name-entry-label">Nuevo record! Ingresa tu nombre:</p>
+          <div class="name-entry-row">
+            <input type="text" id="player-name" class="player-name-input" maxlength="12" placeholder="Tu nombre" />
+            <button id="save-score-btn" class="save-btn">Guardar</button>
+          </div>
+        </div>
+
+        <!-- Leaderboard shown after saving or if score didn't qualify -->
+        <div id="overlay-leaderboard" class="overlay-leaderboard hidden">
+          <table class="leaderboard-table overlay-lb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Pts</th>
+                <th>Combo</th>
+                <th>Lines</th>
+              </tr>
+            </thead>
+            <tbody id="overlay-leaderboard-body">
+            </tbody>
+          </table>
+        </div>
+
         <button id="restart-btn">Reiniciar</button>
+      </div>
+    </div>
+
+    <!-- Pause Menu overlay -->
+    <div id="pause-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Menú de pausa">
+      <div class="overlay-box pause-menu">
+        <p class="pause-title">PAUSA</p>
+
+        <button id="resume-btn" class="menu-btn">Reanudar</button>
+        <button id="pause-restart-btn" class="menu-btn">Reiniciar</button>
+        <button id="controls-btn" class="menu-btn" aria-expanded="false" aria-controls="controls-list">
+          Ver controles
+        </button>
+
+        <ul id="controls-list" class="pause-controls hidden" aria-hidden="true">
+          <li><kbd>←</kbd> <kbd>→</kbd> mover</li>
+          <li><kbd>↑</kbd> / <kbd>X</kbd> rotar</li>
+          <li><kbd>↓</kbd> bajar</li>
+          <li><kbd>Space</kbd> caída rápida</li>
+          <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+        </ul>
+
+        <div class="pause-level-section">
+          <label for="start-level-input" class="pause-level-label">Nivel inicial</label>
+          <input
+            id="start-level-input"
+            class="start-level-input"
+            type="number"
+            min="1"
+            max="15"
+            value="1"
+            aria-label="Nivel inicial (1–15)"
+          />
+        </div>
       </div>
     </div>
   </div>
