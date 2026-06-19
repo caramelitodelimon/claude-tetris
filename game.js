@@ -42,6 +42,8 @@ const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let lightMode = false;
+let maxCombo = 0;
+let newEntryIndex = -1;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -109,6 +111,7 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    maxCombo = Math.max(maxCombo, cleared);
     updateHUD();
   }
 }
@@ -223,7 +226,24 @@ function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Puntuacion: ${score.toLocaleString()}`;
+
+  // Reset overlay leaderboard state
+  newEntryIndex = -1;
+  const nameEntry = document.getElementById('name-entry');
+  const overlayLeaderboard = document.getElementById('overlay-leaderboard');
+  const playerNameInput = document.getElementById('player-name');
+  nameEntry.classList.add('hidden');
+  overlayLeaderboard.classList.add('hidden');
+  playerNameInput.value = '';
+
+  if (qualifiesForLeaderboard()) {
+    nameEntry.classList.remove('hidden');
+    setTimeout(() => playerNameInput.focus(), 50);
+  } else {
+    showOverlayLeaderboard();
+  }
+
   overlay.classList.remove('hidden');
 }
 
@@ -258,6 +278,68 @@ function loop(ts) {
   animId = requestAnimationFrame(loop);
 }
 
+// ---- Leaderboard helpers ----
+
+const LEADERBOARD_KEY = 'tetris-leaderboard';
+const LEADERBOARD_MAX = 5;
+
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY)) || []; }
+  catch (_) { return []; }
+}
+
+function qualifiesForLeaderboard() {
+  const board = loadLeaderboard();
+  return board.length < LEADERBOARD_MAX || score > board[board.length - 1].score;
+}
+
+function saveToLeaderboard(name) {
+  const lb = loadLeaderboard();
+  const entry = { name: name.trim() || 'Anonimo', score, combo: maxCombo, lines };
+  lb.push(entry);
+  lb.sort((a, b) => b.score - a.score);
+  const trimmed = lb.slice(0, LEADERBOARD_MAX);
+  newEntryIndex = trimmed.indexOf(entry);
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(trimmed));
+  return trimmed;
+}
+
+function renderLeaderboardRows(tbody, entries, highlightIndex) {
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (entries.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = 'Sin records';
+    td.className = 'lb-empty';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  entries.forEach((entry, i) => {
+    const tr = document.createElement('tr');
+    if (i === highlightIndex) tr.classList.add('lb-new-entry');
+    [i + 1, entry.name, entry.score.toLocaleString(), entry.combo, entry.lines].forEach(val => {
+      const td = document.createElement('td');
+      td.textContent = val;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderLeaderboard() {
+  const entries = loadLeaderboard();
+  renderLeaderboardRows(document.getElementById('sidebar-leaderboard-body'), entries, -1);
+}
+
+function showOverlayLeaderboard() {
+  const entries = loadLeaderboard();
+  renderLeaderboardRows(document.getElementById('overlay-leaderboard-body'), entries, newEntryIndex);
+  document.getElementById('overlay-leaderboard').classList.remove('hidden');
+}
+
 function init() {
   board = createBoard();
   score = 0;
@@ -265,6 +347,8 @@ function init() {
   level = 1;
   paused = false;
   gameOver = false;
+  maxCombo = 0;
+  newEntryIndex = -1;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
@@ -303,6 +387,27 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+// ---- Leaderboard event handlers ----
+const saveScoreBtn = document.getElementById('save-score-btn');
+const playerNameInput = document.getElementById('player-name');
+
+saveScoreBtn.addEventListener('click', () => {
+  const name = playerNameInput.value.trim();
+  saveToLeaderboard(name);
+  document.getElementById('name-entry').classList.add('hidden');
+  showOverlayLeaderboard();
+  renderLeaderboard();
+});
+
+playerNameInput.addEventListener('keydown', e => {
+  if (e.code === 'Enter') saveScoreBtn.click();
+});
+
+document.getElementById('clear-records-btn').addEventListener('click', () => {
+  localStorage.removeItem(LEADERBOARD_KEY);
+  renderLeaderboard();
+});
+
 function applyTheme(isLight) {
   lightMode = isLight;
   document.body.classList.toggle('light-mode', isLight);
@@ -317,4 +422,6 @@ if (localStorage.getItem('tetris-theme') === 'light') {
 }
 themeToggle.addEventListener('change', () => applyTheme(themeToggle.checked));
 
+// Render leaderboard on page load
+renderLeaderboard();
 init();
