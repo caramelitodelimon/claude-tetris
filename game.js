@@ -15,6 +15,13 @@ const COLORS = [
   '#ffb74d', // L - orange
 ];
 
+const SKIN_PALETTES = {
+  retro:  [null,'#ff5370','#ff9e64','#e0af68','#9ece6a','#73daca','#7aa2f7','#bb9af7'],
+  neon:   [null,'#ff0055','#ff6600','#ffcc00','#00ff88','#00ffff','#4488ff','#cc44ff'],
+  pastel: [null,'#ffb3ba','#ffdfba','#ffffba','#baffc9','#bae1ff','#c9baff','#ffbae1'],
+  pixel:  [null,'#ff5370','#ff9e64','#e0af68','#9ece6a','#73daca','#7aa2f7','#bb9af7'],
+};
+
 const PIECES = [
   null,
   [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
@@ -39,9 +46,94 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const pauseOverlay = document.getElementById('pause-overlay');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const controlsBtn = document.getElementById('controls-btn');
+const controlsList = document.getElementById('controls-list');
+const startLevelInput = document.getElementById('start-level-input');
+const nameEntry = document.getElementById('name-entry');
+const playerNameInput = document.getElementById('player-name');
+const saveScoreBtn = document.getElementById('save-score-btn');
+const overlayLeaderboard = document.getElementById('overlay-leaderboard');
+const overlayLeaderboardBody = document.getElementById('overlay-leaderboard-body');
+const leaderboardBody = document.getElementById('leaderboard-body');
+const clearRecordsBtn = document.getElementById('clear-records-btn');
+
+const LEADERBOARD_KEY = 'tetris-leaderboard';
+const LEADERBOARD_MAX = 5;
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let lightMode = false;
+let startLevel = 1;
+let currentSkin = 'retro';
+let canvasBgColor = '#1a1a25';
+let maxCombo = 0, maxLines = 0;
+let newEntryIndex = -1;
+
+// ---- Leaderboard helpers ----
+
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function qualifiesForLeaderboard(currentScore) {
+  const lb = loadLeaderboard();
+  return lb.length < LEADERBOARD_MAX || currentScore > lb[lb.length - 1].score;
+}
+
+function saveToLeaderboard(name) {
+  const lb = loadLeaderboard();
+  const entry = { name: name.trim() || 'Anonimo', score, combo: maxCombo, lines: maxLines };
+  lb.push(entry);
+  lb.sort((a, b) => b.score - a.score);
+  const trimmed = lb.slice(0, LEADERBOARD_MAX);
+  newEntryIndex = trimmed.indexOf(entry);
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(trimmed));
+  return trimmed;
+}
+
+function renderLeaderboardRows(tbody, entries, highlightIndex) {
+  tbody.innerHTML = '';
+  if (entries.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.textContent = 'Sin records';
+    td.className = 'lb-empty';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  entries.forEach((entry, i) => {
+    const tr = document.createElement('tr');
+    if (i === highlightIndex) tr.classList.add('lb-new-entry');
+    [i + 1, entry.name, entry.score.toLocaleString(), entry.combo, entry.lines].forEach(val => {
+      const td = document.createElement('td');
+      td.textContent = val;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderLeaderboard() {
+  const entries = loadLeaderboard();
+  renderLeaderboardRows(leaderboardBody, entries, -1);
+}
+
+function showOverlayLeaderboard() {
+  const entries = loadLeaderboard();
+  renderLeaderboardRows(overlayLeaderboardBody, entries, newEntryIndex);
+  overlayLeaderboard.classList.remove('hidden');
+}
+
+// ---- Board / piece functions ----
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -107,8 +199,11 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
+    level = Math.max(startLevel, Math.floor(lines / 10) + 1);
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    // Track max combo (lines cleared in a single move) and cumulative lines
+    if (cleared > maxCombo) maxCombo = cleared;
+    if (lines > maxLines) maxLines = lines;
     updateHUD();
   }
 }
@@ -157,16 +252,49 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
-function drawBlock(context, x, y, colorIndex, size, alpha) {
-  if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+function drawBlock(ctx, x, y, colorIdx, size, alpha = 1) {
+  if (!colorIdx) return;
+  const color = (SKIN_PALETTES[currentSkin] || SKIN_PALETTES.retro)[colorIdx];
+  ctx.globalAlpha = alpha;
+
+  if (currentSkin === 'neon') {
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
+  }
+
+  ctx.fillStyle = color;
+  ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+
+  if (currentSkin === 'pastel') {
+    // Simulate rounded corners: paint corners with bg color
+    const corner = 5;
+    const bx = x * size + 1, by = y * size + 1, bw = size - 2, bh = size - 2;
+    ctx.globalAlpha = 1; // corners always opaque
+    ctx.fillStyle = canvasBgColor;
+    ctx.fillRect(bx, by, corner, corner);
+    ctx.fillRect(bx + bw - corner, by, corner, corner);
+    ctx.fillRect(bx, by + bh - corner, corner, corner);
+    ctx.fillRect(bx + bw - corner, by + bh - corner, corner, corner);
+    ctx.globalAlpha = alpha;
+  } else if (currentSkin === 'pixel') {
+    // Dot pattern over block
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    const dotSize = 4;
+    const bx = x * size + 6, by = y * size + 6;
+    ctx.fillRect(bx, by, dotSize, dotSize);
+    ctx.fillRect(bx + 10, by + 10, dotSize, dotSize);
+    ctx.fillRect(bx + 5, by + 5, dotSize, dotSize);
+  } else {
+    // Highlight for retro/neon
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  }
+
+  if (currentSkin === 'neon') {
+    ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent';
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawGrid() {
@@ -223,21 +351,48 @@ function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Puntuacion: ${score.toLocaleString()}`;
+
+  // Reset overlay leaderboard state
+  newEntryIndex = -1;
+  nameEntry.classList.add('hidden');
+  overlayLeaderboard.classList.add('hidden');
+  playerNameInput.value = '';
+
+  if (qualifiesForLeaderboard(score)) {
+    nameEntry.classList.remove('hidden');
+    setTimeout(() => playerNameInput.focus(), 50);
+  } else {
+    showOverlayLeaderboard();
+  }
+
   overlay.classList.remove('hidden');
+}
+
+function openPauseMenu() {
+  if (gameOver) return;
+  paused = true;
+  cancelAnimationFrame(animId);
+  pauseOverlay.classList.remove('hidden');
+  // Trap focus — move focus to first menu button
+  resumeBtn.focus();
+}
+
+function closePauseMenu() {
+  paused = false;
+  pauseOverlay.classList.add('hidden');
+  lastTime = performance.now();
+  animId = requestAnimationFrame(loop);
+  // Return focus to canvas so keyboard events reach the game
+  canvas.focus();
 }
 
 function togglePause() {
   if (gameOver) return;
-  paused = !paused;
-  if (!paused) {
-    lastTime = performance.now();
-    loop(lastTime);
+  if (paused) {
+    closePauseMenu();
   } else {
-    cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    openPauseMenu();
   }
 }
 
@@ -262,22 +417,31 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  maxCombo = 0;
+  maxLines = 0;
+  newEntryIndex = -1;
+  dropInterval = Math.max(100, 1000 - (startLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseOverlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    // Escape also closes the pause menu (but don't open via Escape when game is over)
+    if (e.code === 'Escape' && !paused) return;
+    togglePause();
+    return;
+  }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -303,11 +467,86 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+// ---- Leaderboard event handlers ----
+saveScoreBtn.addEventListener('click', () => {
+  const name = playerNameInput.value.trim();
+  saveToLeaderboard(name);
+  nameEntry.classList.add('hidden');
+  showOverlayLeaderboard();
+  renderLeaderboard();
+});
+
+playerNameInput.addEventListener('keydown', e => {
+  if (e.code === 'Enter') saveScoreBtn.click();
+});
+
+clearRecordsBtn.addEventListener('click', () => {
+  localStorage.removeItem(LEADERBOARD_KEY);
+  renderLeaderboard();
+});
+
+// ---- Pause menu button handlers ----
+resumeBtn.addEventListener('click', closePauseMenu);
+
+pauseRestartBtn.addEventListener('click', () => {
+  init();
+});
+
+controlsBtn.addEventListener('click', () => {
+  const expanded = controlsBtn.getAttribute('aria-expanded') === 'true';
+  controlsBtn.setAttribute('aria-expanded', String(!expanded));
+  controlsList.classList.toggle('hidden', expanded);
+  controlsList.setAttribute('aria-hidden', String(expanded));
+  controlsBtn.textContent = expanded ? 'Ver controles' : 'Ocultar controles';
+});
+
+startLevelInput.addEventListener('change', () => {
+  let val = parseInt(startLevelInput.value, 10);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > 15) val = 15;
+  startLevelInput.value = val;
+  startLevel = val;
+});
+
+// Focus trap inside pause menu (Tab key)
+pauseOverlay.addEventListener('keydown', e => {
+  if (e.code !== 'Tab') return;
+  const focusable = Array.from(
+    pauseOverlay.querySelectorAll('button, input')
+  ).filter(el => !el.disabled);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
+
 function applyTheme(isLight) {
   lightMode = isLight;
   document.body.classList.toggle('light-mode', isLight);
   localStorage.setItem('tetris-theme', isLight ? 'light' : 'dark');
   if (current) draw();
+}
+
+function applySkin(skinName) {
+  currentSkin = skinName;
+  localStorage.setItem('tetris-skin', skinName);
+  // Remove any existing skin-* class, keep other classes (e.g. light-mode)
+  document.body.classList.remove('skin-retro', 'skin-neon', 'skin-pastel', 'skin-pixel');
+  document.body.classList.add('skin-' + skinName);
+  // Update canvas bg color cache after CSS vars are applied
+  canvasBgColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-canvas-bg').trim() || '#1a1a25';
+  if (typeof current !== 'undefined' && current) draw();
 }
 
 const themeToggle = document.getElementById('theme-toggle');
@@ -317,4 +556,12 @@ if (localStorage.getItem('tetris-theme') === 'light') {
 }
 themeToggle.addEventListener('change', () => applyTheme(themeToggle.checked));
 
+const skinSelect = document.getElementById('skin-select');
+const savedSkin = localStorage.getItem('tetris-skin') || 'retro';
+skinSelect.value = savedSkin;
+applySkin(savedSkin);
+skinSelect.addEventListener('change', () => applySkin(skinSelect.value));
+
+// Render leaderboard on page load
+renderLeaderboard();
 init();

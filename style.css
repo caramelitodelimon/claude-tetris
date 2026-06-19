@@ -248,3 +248,325 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ---- Pause Menu ---- */
+.pause-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--color-accent);
+  margin-bottom: 4px;
+  transition: color 0.25s;
+}
+
+.pause-menu {
+  gap: 10px;
+  min-width: 220px;
+}
+
+.menu-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s, border-color 0.25s;
+}
+
+.menu-btn:hover,
+.menu-btn:focus {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  outline: none;
+}
+
+.menu-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.pause-controls {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  border: 1px solid var(--color-canvas-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: var(--color-canvas-bg);
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.pause-controls.hidden {
+  display: none;
+}
+
+.pause-controls li {
+  font-size: 12px;
+  color: var(--color-controls);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.25s;
+}
+
+.pause-level-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--color-canvas-border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: var(--color-canvas-bg);
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.pause-level-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-controls);
+  letter-spacing: 1px;
+  transition: color 0.25s;
+}
+
+.start-level-input {
+  width: 56px;
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  text-align: center;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.start-level-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Remove number input spinners for cleaner look */
+.start-level-input::-webkit-inner-spin-button,
+.start-level-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* ---- Skin Selector ---- */
+.skin-select,
+#skin-select {
+  width: 100%;
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.skin-select:focus,
+#skin-select:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ---- Skin: Neon ---- */
+body.skin-neon {
+  --color-bg: #000000;
+  --color-canvas-bg: #050510;
+  --color-canvas-border: #1a1aff;
+  --color-accent: #00ffff;
+  --color-label: #8888ff;
+  --color-toggle-track: #1a1a3a;
+  --color-toggle-thumb: #00ffff;
+}
+
+body.skin-neon .game-title {
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+}
+
+/* ---- Skin: Pastel ---- */
+body.skin-pastel {
+  --color-bg: #f0eaff;
+  --color-canvas-bg: #faf7ff;
+  --color-canvas-border: #d4c5f0;
+  --color-accent: #9b7fd4;
+  --color-text: #3d2b6b;
+  --color-label: #7a5fb5;
+  --color-controls: #998899;
+  --color-kbd-bg: #e8deff;
+  --color-kbd-border: #c5aef0;
+  --color-kbd-text: #776688;
+  --color-overlay: rgba(50, 30, 100, 0.75);
+  --color-toggle-track: #d8c8f8;
+  --color-toggle-thumb: #9b7fd4;
+}
+
+/* Pastel skin coexists fine with light-mode; light-mode vars override
+   only the generic text/bg — pastel's canvas colors take priority
+   because body.skin-pastel specificity equals body.light-mode and
+   the skin class is added last in the DOM class list.            */
+
+/* ---- Skin: Pixel ---- */
+/* Pixel art skin keeps retro colors; only drawBlock changes (dots).
+   No CSS variable overrides needed.                              */
+
+/* ---- Leaderboard (sidebar) ---- */
+.leaderboard-section {
+  gap: 8px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.leaderboard-table th {
+  color: var(--color-label);
+  letter-spacing: 1px;
+  font-weight: 700;
+  text-align: left;
+  padding: 2px 3px;
+  border-bottom: 1px solid var(--color-canvas-border);
+  transition: color 0.25s, border-color 0.25s;
+}
+
+.leaderboard-table td {
+  padding: 3px 3px;
+  color: var(--color-text);
+  transition: color 0.25s;
+}
+
+.leaderboard-table tbody tr:nth-child(even) {
+  background: var(--color-canvas-bg);
+}
+
+.leaderboard-table tbody tr.lb-new-entry td {
+  color: #ffd54f;
+  font-weight: 700;
+}
+
+.lb-empty {
+  text-align: center;
+  color: var(--color-label);
+  font-style: italic;
+  padding: 6px 0;
+}
+
+.clear-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--color-controls);
+  border: 1px solid var(--color-canvas-border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.25s;
+}
+
+.clear-btn:hover {
+  background: #e57373;
+  color: #fff;
+  border-color: #e57373;
+}
+
+/* ---- Leaderboard (overlay) ---- */
+.name-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.name-entry.hidden {
+  display: none;
+}
+
+.name-entry-label {
+  font-size: 12px;
+  color: var(--color-accent);
+  letter-spacing: 0.5px;
+  transition: color 0.25s;
+}
+
+.name-entry-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.player-name-input {
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
+  width: 130px;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.player-name-input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.save-btn {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, color 0.25s;
+}
+
+.save-btn:hover {
+  background: #9bbdff;
+}
+
+.overlay-leaderboard {
+  width: 100%;
+}
+
+.overlay-leaderboard.hidden {
+  display: none;
+}
+
+.overlay-lb-table {
+  min-width: 240px;
+  font-size: 11px;
+}
+
+.overlay-lb-table th {
+  padding: 3px 6px;
+}
+
+.overlay-lb-table td {
+  padding: 4px 6px;
+}
